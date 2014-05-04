@@ -30,5 +30,5 @@ func QueryInterval() int {
 }
 
 func RollbarToken() string {
-	return os.Getenv(k)
+	return os.Getenv("ROLLBAR_TOKEN")
 }

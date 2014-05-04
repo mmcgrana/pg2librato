@@ -1,8 +1,8 @@
-Query reading
 Query execution
 Metric posting
 Error handling
 Concurrent execution
+Check DB polling
 Rollbar support
 Signal handling
 Structured logging
