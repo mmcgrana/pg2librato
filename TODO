@@ -1,7 +1,7 @@
-Metric posting
+Refactoring and concurrent execution
 Error handling
-Concurrent execution
-Check DB polling
+Check DB pooling
+Check time intervals
 Rollbar support
 Signal handling
 Structured logging

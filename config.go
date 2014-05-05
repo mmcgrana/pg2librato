@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"strconv"
+	"strings"
 )
 
 func MustGetenv(k string) string {
@@ -27,6 +28,15 @@ func QueryInterval() int {
 		panic("Must provide QUERY_INTERVAL > 0")
 	}
 	return i
+}
+
+func LibratoAuth() []string {
+	s := MustGetenv("LIBRATO_AUTH")
+	a := strings.Split(s, ":")
+	if len(a) != 2 {
+		panic("Must provide LIBRATO_AUTH as email:token")
+	}
+	return a
 }
 
 func RollbarToken() string {

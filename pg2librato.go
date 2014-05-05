@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
+	"github.com/samuel/go-librato/librato"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
@@ -16,11 +17,12 @@ type Queryfile struct {
 }
 
 func main() {
-	fmt.Println("start")
-	interval := QueryInterval()
-	dbUrl := DatabaseUrl()
+	fmt.Println("config.read-env")
+	queryInterval := QueryInterval()
+	databaseUrl := DatabaseUrl()
+	libratoAuth := LibratoAuth()
 
-	fmt.Println("read")
+	fmt.Println("config.read-files")
 	sqlPaths, err := filepath.Glob("./queries/*.sql")
 	if err != nil {
 		panic(err)
@@ -37,10 +39,9 @@ func main() {
 			Sql:  string(sqlBytes),
 		}
 	}
-	fmt.Println("%+v\n", sqlQueryfiles)
 
-	fmt.Println("connect")
-	db, err := sql.Open("postgres", dbUrl)
+	fmt.Println("postgres.connect")
+	db, err := sql.Open("postgres", databaseUrl)
 	if err != nil {
 		panic(err)
 	}
@@ -63,9 +64,12 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println("loop")
+	fmt.Println("librato.connect")
+	lb := &librato.Client{libratoAuth[0], libratoAuth[1]}
+
+	fmt.Println("reporter.loop")
 	for {
-		fmt.Println("query")
+		fmt.Println("postgres.query")
 		for _, qf := range sqlQueryfiles {
 			rows, err := db.Query(qf.Sql)
 			if err != nil {
@@ -75,9 +79,9 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
+
 			switch len(cols) {
 			case 1:
-				fmt.Println("1 col")
 				present := rows.Next()
 				if !present {
 					panic("No row")
@@ -87,9 +91,17 @@ func main() {
 				if err != nil {
 					panic(err)
 				}
-				fmt.Printf("value=%f\n", value)
+				metric := librato.Metric{
+					Name:  qf.Name,
+					Value: value,
+				}
+				fmt.Printf("postgres.result name=%s value=%f\n", qf.Name, value)
+				fmt.Println("librato.post")
+				lb.PostMetrics(&librato.Metrics{
+					Gauges: []interface{}{metric},
+				})
 			case 2:
-				fmt.Println("2 cols")
+				metrics := []interface{}{}
 				for rows.Next() {
 					var source string
 					var value float64
@@ -97,16 +109,24 @@ func main() {
 					if err != nil {
 						panic(err)
 					}
-					fmt.Printf("source=%s value=%f\n", source, value)
+					fmt.Printf("postgres.result name=%s source=%s value=%f\n", qf.Name, source, value)
+					metric := librato.Metric{
+						Name:   qf.Name,
+						Source: source,
+						Value:  value,
+					}
+					metrics = append(metrics, metric)
 				}
+				fmt.Println("librato.post")
+				lb.PostMetrics(&librato.Metrics{
+					Gauges: metrics,
+				})
 			default:
 				panic("Must return 1 or 2 columns")
 			}
 		}
 
-		fmt.Println("report")
-
-		fmt.Println("wait")
-		time.Sleep(time.Duration(interval) * time.Second)
+		fmt.Println("reporter.wait")
+		time.Sleep(time.Duration(queryInterval) * time.Second)
 	}
 }
