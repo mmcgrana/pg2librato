@@ -78,8 +78,27 @@ func main() {
 			switch len(cols) {
 			case 1:
 				fmt.Println("1 col")
+				present := rows.Next()
+				if !present {
+					panic("No row")
+				}
+				var value float64
+				err = rows.Scan(&value)
+				if err != nil {
+					panic(err)
+				}
+				fmt.Printf("value=%f\n", value)
 			case 2:
 				fmt.Println("2 cols")
+				for rows.Next() {
+					var source string
+					var value float64
+					err = rows.Scan(&source, &value)
+					if err != nil {
+						panic(err)
+					}
+					fmt.Printf("source=%s value=%f\n", source, value)
+				}
 			default:
 				panic("Must return 1 or 2 columns")
 			}
