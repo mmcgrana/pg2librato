@@ -1,10 +1,11 @@
+Synchronized logging
+Set pg app name
+Query timeouts
+Librato timeouts
 Error handling
+Better typing of metricBatch
 Rollbar support
+Testing
+Test with production queries
 Structured logging
 Internal metrics
-Testing
-Synchronized logging
-Query timeouts
-Set pg app name
-Better typing of metricBatch
-Test with production queries
