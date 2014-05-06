@@ -1,4 +1,4 @@
-Concurrent execution and buffering
+Concurrent query execution
 Correct scheduling
 Error handling
 Check DB pooling
@@ -12,3 +12,4 @@ Extract non-blocking select
 Query timeouts
 Set pg app name
 Better typing of metricBatch
+Monitor buffer depths

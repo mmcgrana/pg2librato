@@ -7,8 +7,8 @@ import (
 func SchedulerStart(queryFiles []QueryFile, queryInterval int, queryTicks chan<- QueryFile, stop <-chan bool) {
 	Log("scheduler.start")
 	for {
+		Log("scheduler.tick")
 		for _, queryFile := range queryFiles {
-			Log("scheduler.tick name=%s", queryFile.Name)
 			queryTicks <- queryFile
 		}
 

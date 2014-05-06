@@ -7,11 +7,11 @@ func main() {
 	libratoAuth := LibratoAuth()
 	queryFiles := ReadQueryFiles("./queries/*.sql")
 
-	metricBatches := make(chan []interface{})
+	metricBatches := make(chan []interface{}, 10)
 	libratoStop := make(chan bool)
 	go LibratoStart(libratoAuth, metricBatches, libratoStop)
 
-	queryTicks := make(chan QueryFile)
+	queryTicks := make(chan QueryFile, 10)
 	postgresStop := make(chan bool)
 	go PostgresStart(databaseUrl, queryTicks, metricBatches, postgresStop)
 
