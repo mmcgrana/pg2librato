@@ -44,12 +44,13 @@ func postgresQuery(db *sql.DB, qf QueryFile) []interface{} {
 	return metrics
 }
 
-func postgresWorkerStart(db *sql.DB, queryTicks <-chan QueryFile, metricBatches chan<- []interface{}, stop <-chan bool) {
+func postgresWorkerStart(db *sql.DB, queryTicks <-chan QueryFile, metricBatches chan<- []interface{}, stop <-chan bool, done chan<- bool) {
 	Log("postgres.worker.start")
 	for {
 		select {
 		case <-stop:
 			Log("postgres.worker.exit")
+			done <- true
 			return
 		default:
 		}
@@ -72,15 +73,18 @@ func PostgresStart(databaseUrl string, queryTicks <-chan QueryFile, metricBatche
 
 	numWorkers := 5
 	postgresWorkerStops := make([]chan bool, numWorkers)
+	postgresWorkerDones := make([]chan bool, numWorkers)
 	for w := 0; w < numWorkers; w++ {
 		postgresWorkerStops[w] = make(chan bool)
-		go postgresWorkerStart(db, queryTicks, metricBatches, postgresWorkerStops[w])
+		postgresWorkerDones[w] = make(chan bool)
+		go postgresWorkerStart(db, queryTicks, metricBatches, postgresWorkerStops[w], postgresWorkerDones[w])
 	}
 
 	<-stop
 	Log("postgres.stop")
 	for w := 0; w < numWorkers; w++ {
 		postgresWorkerStops[w] <- true
+		<-postgresWorkerDones[w]
 	}
 	err = db.Close()
 	if err != nil {
