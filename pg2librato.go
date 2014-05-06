@@ -40,7 +40,7 @@ func main() {
 		}
 	}
 
-	fmt.Println("postgres.connect")
+	fmt.Println("postgres.connect.start")
 	db, err := sql.Open("postgres", databaseUrl)
 	if err != nil {
 		panic(err)
@@ -63,14 +63,17 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	fmt.Println("postgres.connect.finish")
 
-	fmt.Println("librato.connect")
+	fmt.Println("librato.connect.start")
 	lb := &librato.Client{libratoAuth[0], libratoAuth[1]}
+	fmt.Println("librato.connect.finish")
 
-	fmt.Println("reporter.loop")
+	fmt.Println("reporter.start")
 	for {
-		fmt.Println("postgres.query")
+		fmt.Println("reporter.loop.start")
 		for _, qf := range sqlQueryfiles {
+			fmt.Printf("postgres.query.start name=%s\n", qf.Name)
 			rows, err := db.Query(qf.Sql)
 			if err != nil {
 				panic(err)
@@ -79,54 +82,44 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-
-			switch len(cols) {
-			case 1:
-				present := rows.Next()
-				if !present {
-					panic("No row")
-				}
+			numCols := len(cols)
+			if numCols != 3 {
+				panic("Must return result set with exactly 3 rows")
+			}
+			metrics := []interface{}{}
+			for rows.Next() {
+				var name string
+				var nullSource sql.NullString
+				var source string
 				var value float64
-				err = rows.Scan(&value)
+				err = rows.Scan(&name, &nullSource, &value)
 				if err != nil {
 					panic(err)
 				}
+				if nullSource.Valid {
+					source = nullSource.String
+				}
+				fmt.Printf("postgres.result name=%s source=%s value=%f\n", name, source, value)
 				metric := librato.Metric{
-					Name:  qf.Name,
-					Value: value,
+					Name:   name,
+					Source: source,
+					Value:  value,
 				}
-				fmt.Printf("postgres.result name=%s value=%f\n", qf.Name, value)
-				fmt.Println("librato.post")
-				lb.PostMetrics(&librato.Metrics{
-					Gauges: []interface{}{metric},
-				})
-			case 2:
-				metrics := []interface{}{}
-				for rows.Next() {
-					var source string
-					var value float64
-					err = rows.Scan(&source, &value)
-					if err != nil {
-						panic(err)
-					}
-					fmt.Printf("postgres.result name=%s source=%s value=%f\n", qf.Name, source, value)
-					metric := librato.Metric{
-						Name:   qf.Name,
-						Source: source,
-						Value:  value,
-					}
-					metrics = append(metrics, metric)
-				}
-				fmt.Println("librato.post")
-				lb.PostMetrics(&librato.Metrics{
-					Gauges: metrics,
-				})
-			default:
-				panic("Must return 1 or 2 columns")
+				metrics = append(metrics, metric)
 			}
+			fmt.Printf("postgres.query.finish name=%s\n", qf.Name)
+
+			fmt.Printf("librato.post.start name=%s\n", qf.Name)
+			err = lb.PostMetrics(&librato.Metrics{
+				Gauges: metrics,
+			})
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("librato.post.finish name=%s\n", qf.Name)
 		}
 
-		fmt.Println("reporter.wait")
+		fmt.Printf("reporter.loop.wait interval=%d\n", queryInterval)
 		time.Sleep(time.Duration(queryInterval) * time.Second)
 	}
 }

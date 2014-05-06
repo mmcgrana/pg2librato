@@ -13,8 +13,8 @@ Build pg2librato:
 $ go get
 ```
 
-Write queries as .sql files in ./queries. Each query must return results
-with three columns, in the following order:
+Write queries as .sql files in ./queries. Each query must return result
+sets with exactly three columns, in the following order:
 
 * A string giving the name of the metric.
 
@@ -28,14 +28,14 @@ For example:
 ```
 $ cat > queries/test-without-source.sql <<EOF
 select
-  'users', null, count(*)
+  'users.total', null, count(*)
 from
   users
 EOF
 
 $ cat > queries/test-with-source.sql <<EOF
 select
-  'users', country, count(*)
+  'users.per-country', country, count(*)
 from
   users
 group by

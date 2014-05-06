@@ -1,5 +1,5 @@
-Simplified interface
 Refactoring and concurrent execution
+Signal handling
 Error handling
 Check DB pooling
 Check time intervals
