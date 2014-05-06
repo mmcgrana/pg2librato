@@ -20,14 +20,13 @@ func LibratoStart(libratoAuth []string, metricBatches <-chan []interface{}, stop
 			}
 			Log("librato.post.finish")
 		default:
-		}
-
-		select {
-		case <-stop:
-			Log("librato.exit")
-			done <- true
-			return
-		default:
+			select {
+			case <-stop:
+				Log("librato.exit")
+				done <- true
+				return
+			default:
+			}
 		}
 	}
 }
