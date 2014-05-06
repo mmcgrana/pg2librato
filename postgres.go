@@ -63,7 +63,7 @@ func postgresWorkerStart(db *sql.DB, queryTicks <-chan QueryFile, metricBatches 
 	}
 }
 
-func PostgresStart(databaseUrl string, queryTicks <-chan QueryFile, metricBatches chan<- []interface{}, stop <-chan bool) {
+func PostgresStart(databaseUrl string, queryTicks <-chan QueryFile, metricBatches chan<- []interface{}, stop <-chan bool, done chan<- bool) {
 	Log("postgres.start")
 	db, err := sql.Open("postgres", databaseUrl)
 	if err != nil {
@@ -86,6 +86,7 @@ func PostgresStart(databaseUrl string, queryTicks <-chan QueryFile, metricBatche
 	if err != nil {
 		panic(err)
 	}
+	done <- true
 
 	Log("postgres.exit")
 }
