@@ -10,3 +10,4 @@ Set pg app name
 Better typing of metricBatch
 Monitor buffer depths
 Better shutdown options?
+Test with production queries
