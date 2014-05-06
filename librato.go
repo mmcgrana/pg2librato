@@ -4,16 +4,9 @@ import (
 	"github.com/samuel/go-librato/librato"
 )
 
-func libratoConnect(libratoAuth []string) *librato.Client {
-	Log("librato.connect.start")
-	lb := &librato.Client{libratoAuth[0], libratoAuth[1]}
-	Log("librato.connect.finish")
-	return lb
-}
-
 func LibratoStart(libratoAuth []string, metricBatches <-chan []interface{}, stop <-chan bool) {
 	Log("librato.start")
-	lb := libratoConnect(libratoAuth)
+	lb := &librato.Client{libratoAuth[0], libratoAuth[1]}
 
 	for {
 		select {
