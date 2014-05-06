@@ -13,28 +13,33 @@ Build pg2librato:
 $ go get
 ```
 
-Write queries as .sql files in ./queries. The file name of the query
-determines the resulting metric name in Librato. Each query must return
-either:
+Write queries as .sql files in ./queries. Each query must return results
+with three columns, in the following order:
 
-* One column, in which case the first row's value gives the metric
-  value.
+* A string giving the name of the metric.
 
-* Two columns, in which case for each row the first column gives the
-  metric source and the second column the metric value.
+* A string giving the source of the metric, or null if the source is
+  unassigned.
+
+* A numeric giving the value for the corresponding {name, source} pair.
  
 For example:
 
 ```
-$ cat > queries/users.sql <<EOF
-select count(*)
-from users
+$ cat > queries/test-without-source.sql <<EOF
+select
+  'users', null, count(*)
+from
+  users
 EOF
 
-$ cat > queries/multi-source-metric-name.sql <<EOF
-select country, count(*)
-from users
-group by country
+$ cat > queries/test-with-source.sql <<EOF
+select
+  'users', country, count(*)
+from
+  users
+group by
+  country
 EOF
 ```
 
@@ -42,15 +47,15 @@ Set the database you want to query, the reporting interval, and your
 Librato credentials:
 
 ```console
-$ export DATABASE_URL=...     # postgres://user:pass@host:port/database
+$ export DATABASE_URL=...    # postgres://user:pass@host:port/database
 $ export QUERY_INTERVAL=...  # time in seconds between queries for each metric
-$ export LIBRATO_AUTH=...     # token from your Librato dashboard
+$ export LIBRATO_AUTH=...    # email:token
 ```
 
 Run the reporter:
 
 ```
-./pg2librato
+$ pg2librato
 ```
 
 Then open up your Librato dashboard to see the results!
