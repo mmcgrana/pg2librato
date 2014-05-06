@@ -7,5 +7,5 @@ Synchronized logging
 Query timeouts
 Set pg app name
 Better typing of metricBatch
-Monitor buffer depths
 Test with production queries
+Name constants

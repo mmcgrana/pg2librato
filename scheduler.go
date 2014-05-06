@@ -11,7 +11,6 @@ func SchedulerStart(queryFiles []QueryFile, queryInterval int, queryTicks chan<-
 		for _, queryFile := range queryFiles {
 			queryTicks <- queryFile
 		}
-
 		select {
 		case <-stop:
 			Log("scheduler.exit")
