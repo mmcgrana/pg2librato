@@ -14,7 +14,7 @@ func SchedulerStart(queryFiles []QueryFile, queryInterval int, queryTicks chan<-
 
 		select {
 		case <-stop:
-			Log("scheduler.stop")
+			Log("scheduler.exit")
 			return
 		case <-time.After(time.Duration(queryInterval) * time.Second):
 		}

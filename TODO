@@ -1,5 +1,3 @@
-Concurrent query execution
-Correct scheduling
 Error handling
 Check DB pooling
 Check time intervals

@@ -6,16 +6,6 @@ import (
 	"github.com/samuel/go-librato/librato"
 )
 
-func postgresConnect(databaseUrl string) *sql.DB {
-	Log("postgres.connect.start")
-	db, err := sql.Open("postgres", databaseUrl)
-	if err != nil {
-		panic(err)
-	}
-	Log("postgres.connect.finish")
-	return db
-}
-
 func postgresQuery(db *sql.DB, qf QueryFile) []interface{} {
 	Log("postgres.query.start name=%s", qf.Name)
 	rows, err := db.Query(qf.Sql)
@@ -54,14 +44,12 @@ func postgresQuery(db *sql.DB, qf QueryFile) []interface{} {
 	return metrics
 }
 
-func PostgresStart(databaseUrl string, queryTicks <-chan QueryFile, metricBatches chan<- []interface{}, stop <-chan bool) {
-	Log("postgres.start")
-	db := postgresConnect(databaseUrl)
-
+func postgresWorkerStart(db *sql.DB, queryTicks <-chan QueryFile, metricBatches chan<- []interface{}, stop <-chan bool) {
+	Log("postgres.worker.start")
 	for {
 		select {
 		case <-stop:
-			Log("postgres.stop")
+			Log("postgres.worker.exit")
 			return
 		default:
 		}
@@ -73,4 +61,31 @@ func PostgresStart(databaseUrl string, queryTicks <-chan QueryFile, metricBatche
 		default:
 		}
 	}
+}
+
+func PostgresStart(databaseUrl string, queryTicks <-chan QueryFile, metricBatches chan<- []interface{}, stop <-chan bool) {
+	Log("postgres.start")
+	db, err := sql.Open("postgres", databaseUrl)
+	if err != nil {
+		panic(err)
+	}
+
+	numWorkers := 5
+	postgresWorkerStops := make([]chan bool, numWorkers)
+	for w := 0; w < numWorkers; w++ {
+		postgresWorkerStops[w] = make(chan bool)
+		go postgresWorkerStart(db, queryTicks, metricBatches, postgresWorkerStops[w])
+	}
+
+	<-stop
+	Log("postgres.stop")
+	for w := 0; w < numWorkers; w++ {
+		postgresWorkerStops[w] <- true
+	}
+	err = db.Close()
+	if err != nil {
+		panic(err)
+	}
+
+	Log("postgres.exit")
 }
