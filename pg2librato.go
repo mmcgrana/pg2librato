@@ -7,7 +7,6 @@ import (
 	"github.com/samuel/go-librato/librato"
 	"io/ioutil"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
@@ -35,7 +34,7 @@ func main() {
 		}
 		pathBase := filepath.Base(path)
 		sqlQueryfiles[i] = Queryfile{
-			Name: strings.TrimSuffix(pathBase, filepath.Ext(pathBase)),
+			Name: pathBase,
 			Sql:  string(sqlBytes),
 		}
 	}
