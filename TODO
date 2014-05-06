@@ -8,5 +8,4 @@ Query timeouts
 Set pg app name
 Better typing of metricBatch
 Monitor buffer depths
-Better shutdown options - close, WaitGroup?
 Test with production queries
