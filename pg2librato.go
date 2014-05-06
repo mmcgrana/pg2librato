@@ -21,12 +21,12 @@ func main() {
 	go TrapStart(globalStop)
 
 	Log("main.await")
-	stop := <-globalStop
+	<-globalStop
 
 	Log("main.stop")
-	schedulerStop <- stop
-	postgresStop <- stop
-	libratoStop <- stop
+	schedulerStop <- true
+	postgresStop <- true
+	libratoStop <- true
 
 	Log("main.exit")
 }
