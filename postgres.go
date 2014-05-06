@@ -70,10 +70,9 @@ func PostgresStart(databaseUrl string, queryTicks <-chan QueryFile, metricBatche
 		panic(err)
 	}
 
-	numWorkers := 5
-	postgresWorkerStops := make([]chan bool, numWorkers)
-	postgresWorkerDones := make([]chan bool, numWorkers)
-	for w := 0; w < numWorkers; w++ {
+	postgresWorkerStops := make([]chan bool, PostgresWorkers)
+	postgresWorkerDones := make([]chan bool, PostgresWorkers)
+	for w := 0; w < PostgresWorkers; w++ {
 		postgresWorkerStops[w] = make(chan bool)
 		postgresWorkerDones[w] = make(chan bool)
 		go postgresWorkerStart(db, queryTicks, metricBatches, postgresWorkerStops[w], postgresWorkerDones[w])
@@ -81,7 +80,7 @@ func PostgresStart(databaseUrl string, queryTicks <-chan QueryFile, metricBatche
 
 	<-stop
 	Log("postgres.stop")
-	for w := 0; w < numWorkers; w++ {
+	for w := 0; w < PostgresWorkers; w++ {
 		postgresWorkerStops[w] <- true
 		<-postgresWorkerDones[w]
 	}

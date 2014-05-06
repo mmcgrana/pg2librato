@@ -8,6 +8,11 @@ import (
 	"strings"
 )
 
+const (
+	MonitorInterval = 5
+	PostgresWorkers = 5
+)
+
 func MustGetenv(k string) string {
 	s := os.Getenv(k)
 	if s == "" {

@@ -8,4 +8,3 @@ Query timeouts
 Set pg app name
 Better typing of metricBatch
 Test with production queries
-Name constants
