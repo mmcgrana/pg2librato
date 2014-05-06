@@ -48,18 +48,17 @@ func postgresWorkerStart(db *sql.DB, queryTicks <-chan QueryFile, metricBatches 
 	Log("postgres.worker.start")
 	for {
 		select {
-		case <-stop:
-			Log("postgres.worker.exit")
-			done <- true
-			return
-		default:
-		}
-
-		select {
 		case queryFile := <-queryTicks:
 			metricBatch := postgresQuery(db, queryFile)
 			metricBatches <- metricBatch
 		default:
+			select {
+			case <-stop:
+				Log("postgres.worker.exit")
+				done <- true
+				return
+			default:
+			}
 		}
 	}
 }
