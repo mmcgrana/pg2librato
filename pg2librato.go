@@ -2,23 +2,22 @@ package main
 
 func main() {
 	Log("main.start")
+
 	queryInterval := QueryInterval()
 	databaseUrl := DatabaseUrl()
 	libratoAuth := LibratoAuth()
 	queryFiles := ReadQueryFiles("./queries/*.sql")
 
 	metricBatches := make(chan []interface{}, 10)
-	libratoStop := make(chan bool)
-	go LibratoStart(libratoAuth, metricBatches, libratoStop)
-
 	queryTicks := make(chan QueryFile, 10)
+	libratoStop := make(chan bool)
 	postgresStop := make(chan bool)
-	go PostgresStart(databaseUrl, queryTicks, metricBatches, postgresStop)
-
 	schedulerStop := make(chan bool)
-	go SchedulerStart(queryFiles, queryInterval, queryTicks, schedulerStop)
-
 	globalStop := make(chan bool)
+
+	go LibratoStart(libratoAuth, metricBatches, libratoStop)
+	go PostgresStart(databaseUrl, queryTicks, metricBatches, postgresStop)
+	go SchedulerStart(queryFiles, queryInterval, queryTicks, schedulerStop)
 	go TrapStart(globalStop)
 
 	Log("main.await")
