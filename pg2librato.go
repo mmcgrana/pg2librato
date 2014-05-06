@@ -5,15 +5,8 @@ import (
 	"fmt"
 	_ "github.com/lib/pq"
 	"github.com/samuel/go-librato/librato"
-	"io/ioutil"
-	"path/filepath"
 	"time"
 )
-
-type Queryfile struct {
-	Name string
-	Sql  string
-}
 
 func main() {
 	fmt.Println("config.read-env")
@@ -21,22 +14,10 @@ func main() {
 	databaseUrl := DatabaseUrl()
 	libratoAuth := LibratoAuth()
 
-	fmt.Println("config.read-files")
-	sqlPaths, err := filepath.Glob("./queries/*.sql")
+	fmt.Println("config.read-query-files")
+	queryFiles, err := ReadQueryFiles("./queries/*.sql")
 	if err != nil {
 		panic(err)
-	}
-	sqlQueryfiles := make([]Queryfile, len(sqlPaths))
-	for i, path := range sqlPaths {
-		sqlBytes, err := ioutil.ReadFile(path)
-		if err != nil {
-			panic(err)
-		}
-		pathBase := filepath.Base(path)
-		sqlQueryfiles[i] = Queryfile{
-			Name: pathBase,
-			Sql:  string(sqlBytes),
-		}
 	}
 
 	fmt.Println("postgres.connect.start")
@@ -71,7 +52,7 @@ func main() {
 	fmt.Println("reporter.start")
 	for {
 		fmt.Println("reporter.loop.start")
-		for _, qf := range sqlQueryfiles {
+		for _, qf := range queryFiles {
 			fmt.Printf("postgres.query.start name=%s\n", qf.Name)
 			rows, err := db.Query(qf.Sql)
 			if err != nil {

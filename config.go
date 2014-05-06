@@ -1,7 +1,9 @@
 package main
 
 import (
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -41,4 +43,29 @@ func LibratoAuth() []string {
 
 func RollbarToken() string {
 	return os.Getenv("ROLLBAR_TOKEN")
+}
+
+type QueryFile struct {
+	Name string
+	Sql  string
+}
+
+func ReadQueryFiles(glob string) ([]QueryFile, error) {
+	sqlPaths, err := filepath.Glob("./queries/*.sql")
+	if err != nil {
+		panic(err)
+	}
+	queryFiles := make([]QueryFile, len(sqlPaths))
+	for i, path := range sqlPaths {
+		sqlBytes, err := ioutil.ReadFile(path)
+		if err != nil {
+			panic(err)
+		}
+		pathBase := filepath.Base(path)
+		queryFiles[i] = QueryFile{
+			Name: pathBase,
+			Sql:  string(sqlBytes),
+		}
+	}
+	return queryFiles, err
 }
