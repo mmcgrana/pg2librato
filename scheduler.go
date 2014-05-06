@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -9,7 +8,7 @@ func SchedulerStart(queryFiles []QueryFile, queryInterval int, queryTicks chan<-
 	Log("scheduler.start")
 	for {
 		for _, queryFile := range queryFiles {
-			Log(fmt.Sprintf("scheduler.tick name=%s", queryFile.Name))
+			Log("scheduler.tick name=%s", queryFile.Name)
 			queryTicks <- queryFile
 		}
 

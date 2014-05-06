@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	_ "github.com/lib/pq"
 	"github.com/samuel/go-librato/librato"
 )
@@ -36,7 +35,7 @@ func postgresConnect(databaseUrl string) *sql.DB {
 }
 
 func postgresQuery(db *sql.DB, qf QueryFile) []interface{} {
-	Log(fmt.Sprintf("postgres.query.start name=%s", qf.Name))
+	Log("postgres.query.start name=%s", qf.Name)
 	rows, err := db.Query(qf.Sql)
 	if err != nil {
 		panic(err)
@@ -62,7 +61,7 @@ func postgresQuery(db *sql.DB, qf QueryFile) []interface{} {
 		if nullSource.Valid {
 			source = nullSource.String
 		}
-		Log(fmt.Sprintf("postgres.result name=%s source=%s value=%f", name, source, value))
+		Log("postgres.result name=%s source=%s value=%f", name, source, value)
 		metric := librato.Metric{
 			Name:   name,
 			Source: source,
