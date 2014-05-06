@@ -1,11 +1,15 @@
-Refactoring and concurrent execution
+Concurrent execution and buffering
 Correct scheduling
-Signal handling
 Error handling
 Check DB pooling
 Check time intervals
 Rollbar support
-Signal handling
 Structured logging
 Internal metrics
 Testing
+Synchronized logging
+Extract non-blocking select
+Query timeouts
+Set pg app name
+Better log helper
+Better typing of metricBatch
