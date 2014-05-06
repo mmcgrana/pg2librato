@@ -12,24 +12,6 @@ func postgresConnect(databaseUrl string) *sql.DB {
 	if err != nil {
 		panic(err)
 	}
-	rows, err := db.Query("SELECT 1")
-	if err != nil {
-		panic(err)
-	}
-	for rows.Next() {
-		var count int
-		err = rows.Scan(&count)
-		if err != nil {
-			panic(err)
-		}
-		if count != 1 {
-			panic("Couldn't connect to database")
-		}
-	}
-	err = rows.Err()
-	if err != nil {
-		panic(err)
-	}
 	Log("postgres.connect.finish")
 	return db
 }
