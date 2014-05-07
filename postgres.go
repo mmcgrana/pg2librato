@@ -11,24 +11,24 @@ func postgresQuery(db *sql.DB, qf QueryFile, queryTimeout int) []interface{} {
 	Log("postgres.query.start name=%s", qf.Name)
 	_, err := db.Exec(fmt.Sprintf("set application_name TO 'pg2librato - %s'", qf.Name))
 	if err != nil {
-		panic(err)
+		Error(err)
 	}
 	_, err = db.Exec(fmt.Sprintf("set statement_timeout TO %d", queryTimeout*1000))
 	if err != nil {
-		panic(err)
+		Error(err)
 	}
 
 	rows, err := db.Query(qf.Sql)
 	if err != nil {
-		panic(err)
+		Error(err)
 	}
 	cols, err := rows.Columns()
 	if err != nil {
-		panic(err)
+		Error(err)
 	}
 	numCols := len(cols)
 	if numCols != 3 {
-		panic("Must return result set with exactly 3 rows")
+		Error("Must return result set with exactly 3 rows")
 	}
 	Log("postgres.query.finish name=%s", qf.Name)
 	metrics := []interface{}{}
@@ -39,7 +39,7 @@ func postgresQuery(db *sql.DB, qf QueryFile, queryTimeout int) []interface{} {
 		var value float64
 		err = rows.Scan(&name, &nullSource, &value)
 		if err != nil {
-			panic(err)
+			Error(err)
 		}
 		if nullSource.Valid {
 			source = nullSource.String
@@ -78,7 +78,7 @@ func PostgresStart(databaseUrl string, queryTicks <-chan QueryFile, queryTimeout
 	Log("postgres.start")
 	db, err := sql.Open("postgres", databaseUrl)
 	if err != nil {
-		panic(err)
+		Error(err)
 	}
 
 	postgresWorkerStops := make([]chan bool, PostgresWorkers)
@@ -95,7 +95,7 @@ func PostgresStart(databaseUrl string, queryTicks <-chan QueryFile, queryTimeout
 	}
 	err = db.Close()
 	if err != nil {
-		panic(err)
+		Error(err)
 	}
 	stop <- true
 

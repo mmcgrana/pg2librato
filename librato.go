@@ -16,7 +16,7 @@ func LibratoStart(libratoAuth []string, metricBatches <-chan []interface{}, stop
 				Gauges: metricBatch,
 			})
 			if err != nil {
-				panic(err)
+				Error(err)
 			}
 			Log("librato.post.finish")
 		default:

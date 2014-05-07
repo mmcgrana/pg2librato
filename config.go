@@ -17,7 +17,7 @@ const (
 func MustGetenv(k string) string {
 	s := os.Getenv(k)
 	if s == "" {
-		panic("Must set " + k)
+		Error("Must set " + k)
 	}
 	return s
 }
@@ -30,10 +30,10 @@ func QueryInterval() int {
 	s := MustGetenv("QUERY_INTERVAL")
 	i, err := strconv.Atoi(s)
 	if err != nil {
-		panic(err)
+		Error(err)
 	}
 	if i <= 0 {
-		panic("Must provide QUERY_INTERVAL > 0")
+		Error("Must provide QUERY_INTERVAL > 0")
 	}
 	return i
 }
@@ -42,7 +42,7 @@ func LibratoAuth() []string {
 	s := MustGetenv("LIBRATO_AUTH")
 	a := strings.Split(s, ":")
 	if len(a) != 2 {
-		panic("Must provide LIBRATO_AUTH as email:token")
+		Error("Must provide LIBRATO_AUTH as email:token")
 	}
 	return a
 }
@@ -59,13 +59,13 @@ type QueryFile struct {
 func ReadQueryFiles(glob string) []QueryFile {
 	sqlPaths, err := filepath.Glob("./queries/*.sql")
 	if err != nil {
-		panic(err)
+		Error(err)
 	}
 	queryFiles := make([]QueryFile, len(sqlPaths))
 	for i, path := range sqlPaths {
 		sqlBytes, err := ioutil.ReadFile(path)
 		if err != nil {
-			panic(err)
+			Error(err)
 		}
 		pathBase := filepath.Base(path)
 		queryFiles[i] = QueryFile{
