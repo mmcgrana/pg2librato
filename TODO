@@ -4,3 +4,4 @@ Postgres timeouts
 Librato timeouts
 Internal metrics
 Spinning inefficiency
+Code shrinking
