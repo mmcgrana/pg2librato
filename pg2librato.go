@@ -19,7 +19,7 @@ func main() {
 	done := make(chan bool)
 
 	go TrapStart(globalStop)
-	go MonitorStart(queryTicks, metricBatches, monitorStop, done)
+	go MonitorStart(queryTicks, metricBatches, MonitorInterval, monitorStop)
 	go LibratoStart(libratoAuth, metricBatches, libratoStop, done)
 	go PostgresStart(databaseUrl, queryTicks, queryTimeout, metricBatches, postgresStop, done)
 	go SchedulerStart(queryFiles, queryInterval, queryTicks, schedulerStop, done)
@@ -35,7 +35,7 @@ func main() {
 	libratoStop <- true
 	<-done
 	monitorStop <- true
-	<-done
+	<-monitorStop
 
 	Log("main.exit")
 }
