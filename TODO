@@ -1,8 +1,8 @@
-Postgres timeouts
-Librato timeouts
 Error handling
 Rollbar support
-Testing
 Test with production queries
-Internal metrics
 Code checker thing
+Testing
+Postgres timeouts
+Librato timeouts
+Internal metrics
