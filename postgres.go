@@ -2,33 +2,33 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	_ "github.com/lib/pq"
 	"github.com/samuel/go-librato/librato"
 )
 
-func postgresQuery(db *sql.DB, qf QueryFile, queryTimeout int) []interface{} {
+func postgresQuery(db *sql.DB, qf QueryFile, queryTimeout int) ([]interface{}, error) {
 	Log("postgres.query.start name=%s", qf.Name)
 	_, err := db.Exec(fmt.Sprintf("set application_name TO 'pg2librato - %s'", qf.Name))
 	if err != nil {
-		Error(err)
+		return nil, err
 	}
 	_, err = db.Exec(fmt.Sprintf("set statement_timeout TO %d", queryTimeout*1000))
 	if err != nil {
-		Error(err)
+		return nil, err
 	}
-
 	rows, err := db.Query(qf.Sql)
 	if err != nil {
-		Error(err)
+		return nil, err
 	}
 	cols, err := rows.Columns()
 	if err != nil {
-		Error(err)
+		return nil, err
 	}
 	numCols := len(cols)
 	if numCols != 3 {
-		Error("Must return result set with exactly 3 rows")
+		return nil, errors.New("Must return result set with exactly 3 rows")
 	}
 	Log("postgres.query.finish name=%s", qf.Name)
 	metrics := []interface{}{}
@@ -39,7 +39,7 @@ func postgresQuery(db *sql.DB, qf QueryFile, queryTimeout int) []interface{} {
 		var value float64
 		err = rows.Scan(&name, &nullSource, &value)
 		if err != nil {
-			Error(err)
+			return nil, err
 		}
 		if nullSource.Valid {
 			source = nullSource.String
@@ -52,7 +52,7 @@ func postgresQuery(db *sql.DB, qf QueryFile, queryTimeout int) []interface{} {
 		}
 		metrics = append(metrics, metric)
 	}
-	return metrics
+	return metrics, nil
 }
 
 func postgresWorkerStart(db *sql.DB, queryTicks <-chan QueryFile, queryTimeout int, metricBatches chan<- []interface{}, stop chan bool) {
@@ -60,7 +60,10 @@ func postgresWorkerStart(db *sql.DB, queryTicks <-chan QueryFile, queryTimeout i
 	for {
 		select {
 		case queryFile := <-queryTicks:
-			metricBatch := postgresQuery(db, queryFile, queryTimeout)
+			metricBatch, err := postgresQuery(db, queryFile, queryTimeout)
+			if err != nil {
+				Error(err)
+			}
 			metricBatches <- metricBatch
 		default:
 			select {
