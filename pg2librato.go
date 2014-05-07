@@ -3,9 +3,10 @@ package main
 func main() {
 	Log("main.start")
 
-	queryInterval := QueryInterval()
 	databaseUrl := DatabaseUrl()
 	libratoAuth := LibratoAuth()
+	queryInterval := QueryInterval()
+	queryTimeout := queryInterval
 	queryFiles := ReadQueryFiles("./queries/*.sql")
 
 	metricBatches := make(chan []interface{}, 10)
@@ -20,7 +21,7 @@ func main() {
 	go TrapStart(globalStop)
 	go MonitorStart(queryTicks, metricBatches, monitorStop, done)
 	go LibratoStart(libratoAuth, metricBatches, libratoStop, done)
-	go PostgresStart(databaseUrl, queryTicks, queryInterval, metricBatches, postgresStop, done)
+	go PostgresStart(databaseUrl, queryTicks, queryTimeout, metricBatches, postgresStop, done)
 	go SchedulerStart(queryFiles, queryInterval, queryTicks, schedulerStop, done)
 
 	Log("main.await")
