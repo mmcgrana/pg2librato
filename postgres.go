@@ -83,6 +83,7 @@ func PostgresStart(databaseUrl string, queryTicks <-chan QueryFile, queryTimeout
 	if err != nil {
 		Error(err)
 	}
+	defer db.Close()
 
 	postgresWorkerStops := make([]chan bool, PostgresWorkers)
 	for w := 0; w < PostgresWorkers; w++ {
@@ -96,11 +97,6 @@ func PostgresStart(databaseUrl string, queryTicks <-chan QueryFile, queryTimeout
 		postgresWorkerStops[w] <- true
 		<-postgresWorkerStops[w]
 	}
-	err = db.Close()
-	if err != nil {
-		Error(err)
-	}
 	stop <- true
-
 	Log("postgres.exit")
 }
