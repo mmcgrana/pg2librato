@@ -6,7 +6,6 @@ func main() {
 	databaseUrl := DatabaseUrl()
 	libratoAuth := LibratoAuth()
 	queryInterval := QueryInterval()
-	queryTimeout := queryInterval
 	queryFiles := ReadQueryFiles("./queries/*.sql")
 
 	metricBatches := make(chan []interface{}, 10)
@@ -20,7 +19,7 @@ func main() {
 	go TrapStart(globalStop)
 	go MonitorStart(queryTicks, metricBatches, MonitorInterval, monitorStop)
 	go LibratoStart(libratoAuth, metricBatches, libratoStop)
-	go PostgresStart(databaseUrl, queryTicks, queryTimeout, metricBatches, postgresStop)
+	go PostgresStart(databaseUrl, queryTicks, QueryTimeout, metricBatches, postgresStop)
 	go SchedulerStart(queryFiles, queryInterval, queryTicks, schedulerStop)
 
 	Log("main.await")

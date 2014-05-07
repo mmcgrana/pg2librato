@@ -11,6 +11,7 @@ import (
 const (
 	MonitorInterval = 5
 	PostgresWorkers = 5
+	QueryTimeout    = 30
 )
 
 func MustGetenv(k string) string {
