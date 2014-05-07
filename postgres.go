@@ -8,13 +8,41 @@ import (
 	"github.com/samuel/go-librato/librato"
 )
 
-func postgresQuery(db *sql.DB, qf QueryFile, timeout int) ([]interface{}, error) {
-	Log("postgres.query.start name=%s", qf.Name)
-	_, err := db.Exec(fmt.Sprintf("set application_name TO 'pg2librato - %s'", qf.Name))
+func postgresPrep(db *sql.DB, timeout int, name string) error {
+	_, err := db.Exec(fmt.Sprintf("set statement_timeout TO %d", timeout*1000))
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(fmt.Sprintf("set application_name TO '%s'", name))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func postgresScanMetric(rows *sql.Rows) (*librato.Metric, error) {
+	var name string
+	var nullSource sql.NullString
+	var source string
+	var value float64
+	err := rows.Scan(&name, &nullSource, &value)
 	if err != nil {
 		return nil, err
 	}
-	_, err = db.Exec(fmt.Sprintf("set statement_timeout TO %d", timeout*1000))
+	if nullSource.Valid {
+		source = nullSource.String
+	}
+	metric := &librato.Metric{
+		Name:   name,
+		Source: source,
+		Value:  value,
+	}
+	return metric, nil
+}
+
+func postgresQuery(db *sql.DB, qf QueryFile, timeout int) ([]interface{}, error) {
+	Log("postgres.query.start name=%s", qf.Name)
+	err := postgresPrep(db, timeout, "pg2librato - "+qf.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -33,23 +61,11 @@ func postgresQuery(db *sql.DB, qf QueryFile, timeout int) ([]interface{}, error)
 	Log("postgres.query.finish name=%s", qf.Name)
 	metrics := []interface{}{}
 	for rows.Next() {
-		var name string
-		var nullSource sql.NullString
-		var source string
-		var value float64
-		err = rows.Scan(&name, &nullSource, &value)
+		metric, err := postgresScanMetric(rows)
 		if err != nil {
 			return nil, err
 		}
-		if nullSource.Valid {
-			source = nullSource.String
-		}
-		Log("postgres.result name=%s source=%s value=%f", name, source, value)
-		metric := librato.Metric{
-			Name:   name,
-			Source: source,
-			Value:  value,
-		}
+		Log("postgres.result name=%s source=%s value=%f", metric.Name, metric.Source, metric.Value)
 		metrics = append(metrics, metric)
 	}
 	return metrics, nil
