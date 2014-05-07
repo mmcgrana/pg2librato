@@ -1,0 +1,19 @@
+{
+	"ImportPath": "github.com/mmcgrana/pg2librato",
+	"GoVersion": "go1.2.1",
+	"Deps": [
+		{
+			"ImportPath": "github.com/lib/pq",
+			"Rev": "c808a1bb644594ca717ac61f71e6b0e454b835e2"
+		},
+		{
+			"ImportPath": "github.com/samuel/go-librato/librato",
+			"Rev": "b80100a79afc18cc82a336e45be35a05751fc669"
+		},
+		{
+			"ImportPath": "github.com/stvp/rollbar",
+			"Comment": "v0.0.4",
+			"Rev": "4f5d85a596854b16b5324d6dc7cd794e4374e867"
+		}
+	]
+}
