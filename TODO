@@ -1,6 +1,5 @@
-Error handling
-Rollbar support
 Test with production queries
+Test on Heroku
 Code checker thing
 Testing
 Postgres timeouts

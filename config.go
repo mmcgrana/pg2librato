@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -17,7 +18,7 @@ const (
 func MustGetenv(k string) string {
 	s := os.Getenv(k)
 	if s == "" {
-		Error("Must set " + k)
+		Error(errors.New("Must set " + k))
 	}
 	return s
 }
@@ -33,7 +34,7 @@ func QueryInterval() int {
 		Error(err)
 	}
 	if i <= 0 {
-		Error("Must provide QUERY_INTERVAL > 0")
+		Error(errors.New("Must provide QUERY_INTERVAL > 0"))
 	}
 	return i
 }
@@ -42,13 +43,17 @@ func LibratoAuth() []string {
 	s := MustGetenv("LIBRATO_AUTH")
 	a := strings.Split(s, ":")
 	if len(a) != 2 {
-		Error("Must provide LIBRATO_AUTH as email:token")
+		Error(errors.New("Must provide LIBRATO_AUTH as email:token"))
 	}
 	return a
 }
 
-func RollbarToken() string {
-	return os.Getenv("ROLLBAR_TOKEN")
+func RollbarAccessToken() string {
+	return os.Getenv("ROLLBAR_ACCESS_TOKEN")
+}
+
+func RollbarEnvironment() string {
+	return MustGetenv("ROLLBAR_ENVIRONMENT")
 }
 
 type QueryFile struct {

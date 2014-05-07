@@ -66,20 +66,23 @@ If you'd like, you can use Rollbar to report errors in your pg2librato
 reporter. Configure Rollbar with:
 
 ```
-$ export ROLLBAR_TOKEN=...
+$ export ROLLBAR_ACCESS_TOKEN=...  # provided by Rollbar service
+$ export ROLLBAR_ENVIRONMENT=      # e.g. development or production
 ```
 
 If Rollbar config is not provided, you can still see errors in the logs.
 
 ### Deploying to Heroku
 
-Since pg2librato uses only one dyno, it's free to run on Heroku. Use the
-provided setup-heroku script to set up your reporter app:
+Since pg2librato uses only one dyno, it's free to run on Heroku. Deploy
+with something like the following:
 
 ```
-$ export DATABASE_URL=...     # perhaps `heroku config:get DATABASE_URL -a business-app`
-$ export QUERY_INTERVAL=...
-$ export APP_NAME=...
-$ export ROLLBARP_TOKEN=...   # optional
-$ ./setup-heroku
+$ heroku create
+$ heroku config:set DATABASE_URL=...         # perhaps `heroku config:get DATABASE_URL -a business-app`
+$ heroku config:set QUERY_INTERVAL=...
+$ heroku addons:add rollbar                  # optional
+$ heroku config:set ROLLBAR_ENVIRONMENT=...
+$ git push heroku master
+$ heroku scale pg2librato=1
 ```
