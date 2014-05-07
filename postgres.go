@@ -55,7 +55,7 @@ func postgresQuery(db *sql.DB, qf QueryFile, queryTimeout int) []interface{} {
 	return metrics
 }
 
-func postgresWorkerStart(db *sql.DB, queryTicks <-chan QueryFile, queryTimeout int, metricBatches chan<- []interface{}, stop <-chan bool, done chan<- bool) {
+func postgresWorkerStart(db *sql.DB, queryTicks <-chan QueryFile, queryTimeout int, metricBatches chan<- []interface{}, stop chan bool) {
 	Log("postgres.worker.start")
 	for {
 		select {
@@ -66,7 +66,7 @@ func postgresWorkerStart(db *sql.DB, queryTicks <-chan QueryFile, queryTimeout i
 			select {
 			case <-stop:
 				Log("postgres.worker.exit")
-				done <- true
+				stop <- true
 				return
 			default:
 			}
@@ -74,7 +74,7 @@ func postgresWorkerStart(db *sql.DB, queryTicks <-chan QueryFile, queryTimeout i
 	}
 }
 
-func PostgresStart(databaseUrl string, queryTicks <-chan QueryFile, queryTimeout int, metricBatches chan<- []interface{}, stop <-chan bool, done chan<- bool) {
+func PostgresStart(databaseUrl string, queryTicks <-chan QueryFile, queryTimeout int, metricBatches chan<- []interface{}, stop chan bool) {
 	Log("postgres.start")
 	db, err := sql.Open("postgres", databaseUrl)
 	if err != nil {
@@ -82,24 +82,22 @@ func PostgresStart(databaseUrl string, queryTicks <-chan QueryFile, queryTimeout
 	}
 
 	postgresWorkerStops := make([]chan bool, PostgresWorkers)
-	postgresWorkerDones := make([]chan bool, PostgresWorkers)
 	for w := 0; w < PostgresWorkers; w++ {
 		postgresWorkerStops[w] = make(chan bool)
-		postgresWorkerDones[w] = make(chan bool)
-		go postgresWorkerStart(db, queryTicks, queryTimeout, metricBatches, postgresWorkerStops[w], postgresWorkerDones[w])
+		go postgresWorkerStart(db, queryTicks, queryTimeout, metricBatches, postgresWorkerStops[w])
 	}
 
 	<-stop
 	Log("postgres.stop")
 	for w := 0; w < PostgresWorkers; w++ {
 		postgresWorkerStops[w] <- true
-		<-postgresWorkerDones[w]
+		<-postgresWorkerStops[w]
 	}
 	err = db.Close()
 	if err != nil {
 		panic(err)
 	}
-	done <- true
+	stop <- true
 
 	Log("postgres.exit")
 }

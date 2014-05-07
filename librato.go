@@ -4,7 +4,7 @@ import (
 	"github.com/samuel/go-librato/librato"
 )
 
-func LibratoStart(libratoAuth []string, metricBatches <-chan []interface{}, stop <-chan bool, done chan<- bool) {
+func LibratoStart(libratoAuth []string, metricBatches <-chan []interface{}, stop chan bool) {
 	Log("librato.start")
 	lb := &librato.Client{libratoAuth[0], libratoAuth[1]}
 
@@ -23,7 +23,7 @@ func LibratoStart(libratoAuth []string, metricBatches <-chan []interface{}, stop
 			select {
 			case <-stop:
 				Log("librato.exit")
-				done <- true
+				stop <- true
 				return
 			default:
 			}

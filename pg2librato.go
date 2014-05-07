@@ -16,24 +16,23 @@ func main() {
 	libratoStop := make(chan bool)
 	postgresStop := make(chan bool)
 	schedulerStop := make(chan bool)
-	done := make(chan bool)
 
 	go TrapStart(globalStop)
 	go MonitorStart(queryTicks, metricBatches, MonitorInterval, monitorStop)
-	go LibratoStart(libratoAuth, metricBatches, libratoStop, done)
-	go PostgresStart(databaseUrl, queryTicks, queryTimeout, metricBatches, postgresStop, done)
-	go SchedulerStart(queryFiles, queryInterval, queryTicks, schedulerStop, done)
+	go LibratoStart(libratoAuth, metricBatches, libratoStop)
+	go PostgresStart(databaseUrl, queryTicks, queryTimeout, metricBatches, postgresStop)
+	go SchedulerStart(queryFiles, queryInterval, queryTicks, schedulerStop)
 
 	Log("main.await")
 	<-globalStop
 
 	Log("main.stop")
 	schedulerStop <- true
-	<-done
+	<-schedulerStop
 	postgresStop <- true
-	<-done
+	<-postgresStop
 	libratoStop <- true
-	<-done
+	<-libratoStop
 	monitorStop <- true
 	<-monitorStop
 
