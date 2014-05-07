@@ -2,12 +2,17 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/lib/pq"
 	"github.com/samuel/go-librato/librato"
 )
 
 func postgresQuery(db *sql.DB, qf QueryFile) []interface{} {
 	Log("postgres.query.start name=%s", qf.Name)
+	_, err := db.Exec(fmt.Sprintf("set application_name TO 'pg2librato - %s'", qf.Name))
+	if err != nil {
+		panic(err)
+	}
 	rows, err := db.Query(qf.Sql)
 	if err != nil {
 		panic(err)
