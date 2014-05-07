@@ -7,12 +7,17 @@ import (
 	"github.com/samuel/go-librato/librato"
 )
 
-func postgresQuery(db *sql.DB, qf QueryFile) []interface{} {
+func postgresQuery(db *sql.DB, qf QueryFile, queryTimeout int) []interface{} {
 	Log("postgres.query.start name=%s", qf.Name)
 	_, err := db.Exec(fmt.Sprintf("set application_name TO 'pg2librato - %s'", qf.Name))
 	if err != nil {
 		panic(err)
 	}
+	_, err = db.Exec(fmt.Sprintf("set statement_timeout TO %d", queryTimeout*1000))
+	if err != nil {
+		panic(err)
+	}
+
 	rows, err := db.Query(qf.Sql)
 	if err != nil {
 		panic(err)
@@ -25,6 +30,7 @@ func postgresQuery(db *sql.DB, qf QueryFile) []interface{} {
 	if numCols != 3 {
 		panic("Must return result set with exactly 3 rows")
 	}
+	Log("postgres.query.finish name=%s", qf.Name)
 	metrics := []interface{}{}
 	for rows.Next() {
 		var name string
@@ -49,12 +55,12 @@ func postgresQuery(db *sql.DB, qf QueryFile) []interface{} {
 	return metrics
 }
 
-func postgresWorkerStart(db *sql.DB, queryTicks <-chan QueryFile, metricBatches chan<- []interface{}, stop <-chan bool, done chan<- bool) {
+func postgresWorkerStart(db *sql.DB, queryTicks <-chan QueryFile, queryTimeout int, metricBatches chan<- []interface{}, stop <-chan bool, done chan<- bool) {
 	Log("postgres.worker.start")
 	for {
 		select {
 		case queryFile := <-queryTicks:
-			metricBatch := postgresQuery(db, queryFile)
+			metricBatch := postgresQuery(db, queryFile, queryTimeout)
 			metricBatches <- metricBatch
 		default:
 			select {
@@ -68,7 +74,7 @@ func postgresWorkerStart(db *sql.DB, queryTicks <-chan QueryFile, metricBatches 
 	}
 }
 
-func PostgresStart(databaseUrl string, queryTicks <-chan QueryFile, metricBatches chan<- []interface{}, stop <-chan bool, done chan<- bool) {
+func PostgresStart(databaseUrl string, queryTicks <-chan QueryFile, queryTimeout int, metricBatches chan<- []interface{}, stop <-chan bool, done chan<- bool) {
 	Log("postgres.start")
 	db, err := sql.Open("postgres", databaseUrl)
 	if err != nil {
@@ -80,7 +86,7 @@ func PostgresStart(databaseUrl string, queryTicks <-chan QueryFile, metricBatche
 	for w := 0; w < PostgresWorkers; w++ {
 		postgresWorkerStops[w] = make(chan bool)
 		postgresWorkerDones[w] = make(chan bool)
-		go postgresWorkerStart(db, queryTicks, metricBatches, postgresWorkerStops[w], postgresWorkerDones[w])
+		go postgresWorkerStart(db, queryTicks, queryTimeout, metricBatches, postgresWorkerStops[w], postgresWorkerDones[w])
 	}
 
 	<-stop

@@ -20,7 +20,7 @@ func main() {
 	go TrapStart(globalStop)
 	go MonitorStart(queryTicks, metricBatches, monitorStop, done)
 	go LibratoStart(libratoAuth, metricBatches, libratoStop, done)
-	go PostgresStart(databaseUrl, queryTicks, metricBatches, postgresStop, done)
+	go PostgresStart(databaseUrl, queryTicks, queryInterval, metricBatches, postgresStop, done)
 	go SchedulerStart(queryFiles, queryInterval, queryTicks, schedulerStop, done)
 
 	Log("main.await")
