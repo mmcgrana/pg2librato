@@ -8,13 +8,13 @@ import (
 	"github.com/samuel/go-librato/librato"
 )
 
-func postgresQuery(db *sql.DB, qf QueryFile, queryTimeout int) ([]interface{}, error) {
+func postgresQuery(db *sql.DB, qf QueryFile, timeout int) ([]interface{}, error) {
 	Log("postgres.query.start name=%s", qf.Name)
 	_, err := db.Exec(fmt.Sprintf("set application_name TO 'pg2librato - %s'", qf.Name))
 	if err != nil {
 		return nil, err
 	}
-	_, err = db.Exec(fmt.Sprintf("set statement_timeout TO %d", queryTimeout*1000))
+	_, err = db.Exec(fmt.Sprintf("set statement_timeout TO %d", timeout*1000))
 	if err != nil {
 		return nil, err
 	}
