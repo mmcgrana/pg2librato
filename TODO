@@ -1,7 +1,6 @@
 Query timeouts
 Librato timeouts
 Error handling
-Better typing of metricBatch
 Rollbar support
 Testing
 Test with production queries
