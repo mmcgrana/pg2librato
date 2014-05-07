@@ -81,8 +81,10 @@ with something like the following:
 $ heroku create
 $ heroku config:set DATABASE_URL=...         # perhaps `heroku config:get DATABASE_URL -a business-app`
 $ heroku config:set QUERY_INTERVAL=...
+$ heroku config:set LIBRATO_AUTH=...
 $ heroku addons:add rollbar                  # optional
 $ heroku config:set ROLLBAR_ENVIRONMENT=...
+$ heroku config:set BUILDPACK_URL=https://github.com/kr/heroku-buildpack-go.git
 $ git push heroku master
 $ heroku scale pg2librato=1
 ```
