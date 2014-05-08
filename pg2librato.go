@@ -1,6 +1,10 @@
 package main
 
 import (
+	"database/sql"
+	"errors"
+	"fmt"
+	_ "github.com/lib/pq"
 	"github.com/samuel/go-librato/librato"
 	"time"
 )
@@ -16,15 +20,15 @@ func main() {
 	metricBatches := make(chan []interface{}, 10)
 	queryTicks := make(chan QueryFile, 10)
 
-	go MonitorStart(queryTicks, metricBatches, MonitorInterval)
-	go LibratoStart(libratoAuth, metricBatches)
-	go PostgresStart(databaseUrl, queryTicks, QueryTimeout, metricBatches)
-	go SchedulerStart(queryFiles, queryInterval, queryTicks)
+	go monitorStart(queryTicks, metricBatches, MonitorInterval)
+	go schedulerStart(queryFiles, queryInterval, queryTicks)
+	go libratoStart(libratoAuth, metricBatches)
+	go postgresStart(databaseUrl, queryTicks, QueryTimeout, metricBatches)
 
 	<-make(chan bool)
 }
 
-func MonitorStart(queries chan QueryFile, metrics chan []interface{}, interval int) {
+func monitorStart(queries chan QueryFile, metrics chan []interface{}, interval int) {
 	Log("monitor.start")
 	for {
 		Log("monitor.tick queries=%d metrics=%d", len(queries), len(metrics))
@@ -32,7 +36,18 @@ func MonitorStart(queries chan QueryFile, metrics chan []interface{}, interval i
 	}
 }
 
-func LibratoStart(libratoAuth []string, metricBatches <-chan []interface{}) {
+func schedulerStart(queryFiles []QueryFile, queryInterval int, queryTicks chan<- QueryFile) {
+	Log("scheduler.start")
+	for {
+		Log("scheduler.tick")
+		for _, queryFile := range queryFiles {
+			queryTicks <- queryFile
+		}
+		<-time.After(time.Duration(queryInterval) * time.Second)
+	}
+}
+
+func libratoStart(libratoAuth []string, metricBatches <-chan []interface{}) {
 	Log("librato.start")
 	lb := &librato.Client{libratoAuth[0], libratoAuth[1]}
 	for {
@@ -48,13 +63,88 @@ func LibratoStart(libratoAuth []string, metricBatches <-chan []interface{}) {
 	}
 }
 
-func SchedulerStart(queryFiles []QueryFile, queryInterval int, queryTicks chan<- QueryFile) {
-	Log("scheduler.start")
-	for {
-		Log("scheduler.tick")
-		for _, queryFile := range queryFiles {
-			queryTicks <- queryFile
+func postgresPrep(db *sql.DB, timeout int, name string) error {
+	_, err := db.Exec(fmt.Sprintf("set statement_timeout TO %d", timeout*1000))
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(fmt.Sprintf("set application_name TO '%s'", name))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func postgresScanMetric(rows *sql.Rows) (*librato.Metric, error) {
+	var name string
+	var nullSource sql.NullString
+	var source string
+	var value float64
+	err := rows.Scan(&name, &nullSource, &value)
+	if err != nil {
+		return nil, err
+	}
+	if nullSource.Valid {
+		source = nullSource.String
+	}
+	metric := &librato.Metric{
+		Name:   name,
+		Source: source,
+		Value:  value,
+	}
+	return metric, nil
+}
+
+func postgresQuery(db *sql.DB, qf QueryFile, timeout int) ([]interface{}, error) {
+	Log("postgres.query.start name=%s", qf.Name)
+	err := postgresPrep(db, timeout, "pg2librato - "+qf.Name)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := db.Query(qf.Sql)
+	if err != nil {
+		return nil, err
+	}
+	cols, err := rows.Columns()
+	if err != nil {
+		return nil, err
+	}
+	numCols := len(cols)
+	if numCols != 3 {
+		return nil, errors.New("Must return result set with exactly 3 rows")
+	}
+	Log("postgres.query.finish name=%s", qf.Name)
+	metrics := []interface{}{}
+	for rows.Next() {
+		metric, err := postgresScanMetric(rows)
+		if err != nil {
+			return nil, err
 		}
-		<-time.After(time.Duration(queryInterval) * time.Second)
+		Log("postgres.result name=%s source=%s value=%f", metric.Name, metric.Source, metric.Value)
+		metrics = append(metrics, metric)
+	}
+	return metrics, nil
+}
+
+func postgresWorkerStart(db *sql.DB, queryTicks <-chan QueryFile, queryTimeout int, metricBatches chan<- []interface{}) {
+	Log("postgres.worker.start")
+	for {
+		queryFile := <-queryTicks
+		metricBatch, err := postgresQuery(db, queryFile, queryTimeout)
+		if err != nil {
+			Error(err)
+		}
+		metricBatches <- metricBatch
+	}
+}
+
+func postgresStart(databaseUrl string, queryTicks <-chan QueryFile, queryTimeout int, metricBatches chan<- []interface{}) {
+	Log("postgres.start")
+	db, err := sql.Open("postgres", databaseUrl)
+	if err != nil {
+		Error(err)
+	}
+	for w := 0; w < PostgresWorkers; w++ {
+		go postgresWorkerStart(db, queryTicks, queryTimeout, metricBatches)
 	}
 }
