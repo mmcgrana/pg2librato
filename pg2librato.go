@@ -6,7 +6,7 @@ func main() {
 	databaseUrl := DatabaseUrl()
 	libratoAuth := LibratoAuth()
 	queryInterval := QueryInterval()
-	queryFiles := ReadQueryFiles("./queries/*.sql")
+	queryFiles := QueryFiles()
 
 	metricBatches := make(chan []interface{}, 10)
 	queryTicks := make(chan QueryFile, 10)

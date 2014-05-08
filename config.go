@@ -61,7 +61,7 @@ type QueryFile struct {
 	Sql  string
 }
 
-func ReadQueryFiles(glob string) []QueryFile {
+func QueryFiles() []QueryFile {
 	sqlPaths, err := filepath.Glob("./queries/*.sql")
 	if err != nil {
 		Error(err)
