@@ -17,8 +17,8 @@ func main() {
 	queryInterval := QueryInterval()
 	queryFiles := QueryFiles()
 
-	metricBatches := make(chan []interface{}, 10)
-	queryTicks := make(chan QueryFile, 10)
+	metricBatches := make(chan []interface{}, MetricsBufferSize)
+	queryTicks := make(chan QueryFile, QueriesBufferSize)
 
 	go monitorStart(queryTicks, metricBatches, MonitorInterval)
 	go schedulerStart(queryFiles, queryInterval, queryTicks)

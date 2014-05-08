@@ -10,9 +10,10 @@ import (
 )
 
 const (
-	MonitorInterval = 5
-	PostgresWorkers = 5
-	QueryTimeout    = 30
+	MonitorInterval   = 5
+	QueryTimeout      = 30
+	MetricsBufferSize = 10
+	QueriesBufferSize = 10
 )
 
 func MustGetenv(k string) string {
