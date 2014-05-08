@@ -4,30 +4,18 @@ import (
 	"github.com/samuel/go-librato/librato"
 )
 
-func LibratoStart(libratoAuth []string, metricBatches <-chan []interface{}, stop chan bool) {
+func LibratoStart(libratoAuth []string, metricBatches <-chan []interface{}) {
 	Log("librato.start")
 	lb := &librato.Client{libratoAuth[0], libratoAuth[1]}
-
-	stopping := false
 	for {
-		select {
-		case metricBatch := <-metricBatches:
-			Log("librato.post.start")
-			err := lb.PostMetrics(&librato.Metrics{
-				Gauges: metricBatch,
-			})
-			if err != nil {
-				Error(err)
-			}
-			Log("librato.post.finish")
-		case <-stop:
-			Log("librato.stop")
-			stopping = true
+		metricBatch := <-metricBatches
+		Log("librato.post.start")
+		err := lb.PostMetrics(&librato.Metrics{
+			Gauges: metricBatch,
+		})
+		if err != nil {
+			Error(err)
 		}
-		if stopping && len(metricBatches) == 0 {
-			Log("librato.exit")
-			stop <- true
-			return
-		}
+		Log("librato.post.finish")
 	}
 }

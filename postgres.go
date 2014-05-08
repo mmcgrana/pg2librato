@@ -71,49 +71,25 @@ func postgresQuery(db *sql.DB, qf QueryFile, timeout int) ([]interface{}, error)
 	return metrics, nil
 }
 
-func postgresWorkerStart(db *sql.DB, queryTicks <-chan QueryFile, queryTimeout int, metricBatches chan<- []interface{}, stop chan bool) {
+func postgresWorkerStart(db *sql.DB, queryTicks <-chan QueryFile, queryTimeout int, metricBatches chan<- []interface{}) {
 	Log("postgres.worker.start")
-	stopping := false
 	for {
-		select {
-		case queryFile := <-queryTicks:
-			metricBatch, err := postgresQuery(db, queryFile, queryTimeout)
-			if err != nil {
-				Error(err)
-			}
-			metricBatches <- metricBatch
-		case <-stop:
-			Log("postgres.worker.stop")
-			stopping = true
+		queryFile := <-queryTicks
+		metricBatch, err := postgresQuery(db, queryFile, queryTimeout)
+		if err != nil {
+			Error(err)
 		}
-		if stopping && len(queryTicks) == 0 {
-			Log("postgres.worker.exit")
-			stop <- true
-			return
-		}
+		metricBatches <- metricBatch
 	}
 }
 
-func PostgresStart(databaseUrl string, queryTicks <-chan QueryFile, queryTimeout int, metricBatches chan<- []interface{}, stop chan bool) {
+func PostgresStart(databaseUrl string, queryTicks <-chan QueryFile, queryTimeout int, metricBatches chan<- []interface{}) {
 	Log("postgres.start")
 	db, err := sql.Open("postgres", databaseUrl)
 	if err != nil {
 		Error(err)
 	}
-	defer db.Close()
-
-	postgresWorkerStops := make([]chan bool, PostgresWorkers)
 	for w := 0; w < PostgresWorkers; w++ {
-		postgresWorkerStops[w] = make(chan bool)
-		go postgresWorkerStart(db, queryTicks, queryTimeout, metricBatches, postgresWorkerStops[w])
+		go postgresWorkerStart(db, queryTicks, queryTimeout, metricBatches)
 	}
-
-	<-stop
-	Log("postgres.stop")
-	for w := 0; w < PostgresWorkers; w++ {
-		postgresWorkerStops[w] <- true
-		<-postgresWorkerStops[w]
-	}
-	stop <- true
-	Log("postgres.exit")
 }
