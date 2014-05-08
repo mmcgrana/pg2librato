@@ -16,6 +16,5 @@ func main() {
 	go PostgresStart(databaseUrl, queryTicks, QueryTimeout, metricBatches)
 	go SchedulerStart(queryFiles, queryInterval, queryTicks)
 
-	wait := make(chan bool)
-	<-wait
+	<-make(chan bool)
 }
