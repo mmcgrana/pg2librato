@@ -9,6 +9,11 @@ import (
 	"time"
 )
 
+type QueryFile struct {
+	Path string
+	Sql  string
+}
+
 func main() {
 	Log("main.start")
 
@@ -100,8 +105,8 @@ func postgresScanMetric(rows *sql.Rows) (*librato.Metric, error) {
 }
 
 func postgresQuery(db *sql.DB, qf QueryFile, timeout int) ([]interface{}, error) {
-	Log("postgres.query.start name=%s", qf.Name)
-	err := postgresPrep(db, timeout, "pg2librato - "+qf.Name)
+	Log("postgres.query.start path=%s", qf.Path)
+	err := postgresPrep(db, timeout, "pg2librato - "+qf.Path)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +122,7 @@ func postgresQuery(db *sql.DB, qf QueryFile, timeout int) ([]interface{}, error)
 	if numCols != 3 {
 		return nil, errors.New("Must return result set with exactly 3 rows")
 	}
-	Log("postgres.query.finish name=%s", qf.Name)
+	Log("postgres.query.finish path=%s", qf.Path)
 	metrics := []interface{}{}
 	for rows.Next() {
 		metric, err := postgresScanMetric(rows)

@@ -57,11 +57,6 @@ func RollbarEnvironment() string {
 	return MustGetenv("ROLLBAR_ENVIRONMENT")
 }
 
-type QueryFile struct {
-	Name string
-	Sql  string
-}
-
 func QueryFiles() []QueryFile {
 	sqlPaths, err := filepath.Glob("./queries/*.sql")
 	if err != nil {
@@ -75,7 +70,7 @@ func QueryFiles() []QueryFile {
 		}
 		pathBase := filepath.Base(path)
 		queryFiles[i] = QueryFile{
-			Name: pathBase,
+			Path: pathBase,
 			Sql:  string(sqlBytes),
 		}
 	}
