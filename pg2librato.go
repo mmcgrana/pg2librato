@@ -126,8 +126,12 @@ func postgresQuery(db *sql.DB, qf QueryFile, timeout int) ([]interface{}, error)
 	return metrics, nil
 }
 
-func postgresWorkerStart(db *sql.DB, queryTicks <-chan QueryFile, queryTimeout int, metricBatches chan<- []interface{}) {
-	Log("postgres.worker.start")
+func postgresStart(databaseUrl string, queryTicks <-chan QueryFile, queryTimeout int, metricBatches chan<- []interface{}) {
+	Log("postgres.start")
+	db, err := sql.Open("postgres", databaseUrl)
+	if err != nil {
+		Error(err)
+	}
 	for {
 		queryFile := <-queryTicks
 		metricBatch, err := postgresQuery(db, queryFile, queryTimeout)
@@ -135,16 +139,5 @@ func postgresWorkerStart(db *sql.DB, queryTicks <-chan QueryFile, queryTimeout i
 			Error(err)
 		}
 		metricBatches <- metricBatch
-	}
-}
-
-func postgresStart(databaseUrl string, queryTicks <-chan QueryFile, queryTimeout int, metricBatches chan<- []interface{}) {
-	Log("postgres.start")
-	db, err := sql.Open("postgres", databaseUrl)
-	if err != nil {
-		Error(err)
-	}
-	for w := 0; w < PostgresWorkers; w++ {
-		go postgresWorkerStart(db, queryTicks, queryTimeout, metricBatches)
 	}
 }
