@@ -63,7 +63,7 @@ Then open up your Librato dashboard to see the results!
 ### Error Reporting
 
 If you'd like, you can use Rollbar to report errors in your pg2librato
-reporter. Configure Rollbar with:
+instance. Configure Rollbar with:
 
 ```
 $ export ROLLBAR_ACCESS_TOKEN=...  # provided by Rollbar service
