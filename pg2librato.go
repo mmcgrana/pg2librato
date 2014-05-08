@@ -41,7 +41,11 @@ func schedulerStart(queryFiles []QueryFile, queryInterval int, queryTicks chan<-
 	for {
 		Log("scheduler.tick")
 		for _, queryFile := range queryFiles {
-			queryTicks <- queryFile
+			select {
+			case queryTicks <- queryFile:
+			default:
+				Error(errors.New("Queries channel full"))
+			}
 		}
 		<-time.After(time.Duration(queryInterval) * time.Second)
 	}
@@ -138,6 +142,10 @@ func postgresStart(databaseUrl string, queryTicks <-chan QueryFile, queryTimeout
 		if err != nil {
 			Error(err)
 		}
-		metricBatches <- metricBatch
+		select {
+		case metricBatches <- metricBatch:
+		default:
+			Error(errors.New("Metrics channel full"))
+		}
 	}
 }
