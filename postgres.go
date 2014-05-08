@@ -73,6 +73,7 @@ func postgresQuery(db *sql.DB, qf QueryFile, timeout int) ([]interface{}, error)
 
 func postgresWorkerStart(db *sql.DB, queryTicks <-chan QueryFile, queryTimeout int, metricBatches chan<- []interface{}, stop chan bool) {
 	Log("postgres.worker.start")
+	stopping := false
 	for {
 		select {
 		case queryFile := <-queryTicks:
@@ -81,14 +82,14 @@ func postgresWorkerStart(db *sql.DB, queryTicks <-chan QueryFile, queryTimeout i
 				Error(err)
 			}
 			metricBatches <- metricBatch
-		default:
-			select {
-			case <-stop:
-				Log("postgres.worker.exit")
-				stop <- true
-				return
-			default:
-			}
+		case <-stop:
+			Log("postgres.worker.stop")
+			stopping = true
+		}
+		if stopping && len(queryTicks) == 0 {
+			Log("postgres.worker.exit")
+			stop <- true
+			return
 		}
 	}
 }

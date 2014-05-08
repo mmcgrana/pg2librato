@@ -8,6 +8,7 @@ func LibratoStart(libratoAuth []string, metricBatches <-chan []interface{}, stop
 	Log("librato.start")
 	lb := &librato.Client{libratoAuth[0], libratoAuth[1]}
 
+	stopping := false
 	for {
 		select {
 		case metricBatch := <-metricBatches:
@@ -19,14 +20,14 @@ func LibratoStart(libratoAuth []string, metricBatches <-chan []interface{}, stop
 				Error(err)
 			}
 			Log("librato.post.finish")
-		default:
-			select {
-			case <-stop:
-				Log("librato.exit")
-				stop <- true
-				return
-			default:
-			}
+		case <-stop:
+			Log("librato.stop")
+			stopping = true
+		}
+		if stopping && len(metricBatches) == 0 {
+			Log("librato.exit")
+			stop <- true
+			return
 		}
 	}
 }
