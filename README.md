@@ -5,6 +5,9 @@ as metrics to Librato. In this way you can see business metrics from
 Postgres side-by-side with your existing system and service metrics in
 Librato.
 
+See also [ys/libraclips](https://github.com/ys/libraclips) for emitting
+metrics based on Heroku Postgres Dataclip results.
+
 ### Usage
 
 Build pg2librato:
