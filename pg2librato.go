@@ -6,6 +6,8 @@ import (
 	"fmt"
 	_ "github.com/lib/pq"
 	"github.com/samuel/go-librato/librato"
+	"github.com/stvp/rollbar"
+	"log"
 	"time"
 )
 
@@ -153,4 +155,22 @@ func postgresStart(databaseUrl string, queryTicks <-chan QueryFile, queryTimeout
 			Error(errors.New("Metrics channel full"))
 		}
 	}
+}
+
+func Log(l string, t ...interface{}) {
+	log.Printf(l, t...)
+}
+
+func Error(e error) {
+	rt := RollbarAccessToken()
+	if rt != "" {
+		Log("error.report.start")
+		re := RollbarEnvironment()
+		rollbar.Token = rt
+		rollbar.Environment = re
+		rollbar.Error("error", e)
+		rollbar.Wait()
+		Log("error.report.finish")
+	}
+	panic(e)
 }
